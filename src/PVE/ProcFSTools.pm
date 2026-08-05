@@ -101,13 +101,13 @@ sub read_cpuinfo {
             $res->{model} = $1 if $res->{model} eq 'unknown';
         } elsif ($line =~ m/^vendor_id\s*:\s*(\S*)\s*$/i) {
             $res->{vendor} = $1 if $res->{vendor} eq 'unknown';
-        } elsif ($line =~ m/^cpu family\s*:\s*(\d+)\s*$/i) {
+        } elsif ($line =~ m/^cpu family\s*:\s*(.*)\s*$/i) {
             $res->{family} = $1 if !$res->{family};
         } elsif ($line =~ m/^cpu\s+MHz\s*:\s*(\d+\.\d+)\s*$/i) {
             $res->{mhz} = $1 if !$res->{mhz};
-        } elsif ($line =~ m/^flags\s*:\s*(.*)$/) {
+        } elsif ($line =~ m/^(?:flags|Features)\s*:\s*(.*)$/) {
             $res->{flags} = $1 if !length $res->{flags};
-        } elsif ($line =~ m/^physical id\s*:\s*(\d+)\s*$/i) {
+        } elsif ($line =~ m/^(?:physical id|package)\s*:\s*(\d+)\s*$/i) {
             $cpuid = $1;
             $idhash->{$1} = 1 if not defined($idhash->{$1});
         } elsif ($line =~ m/^cpu cores\s*:\s*(\d+)\s*$/i) {
@@ -127,6 +127,12 @@ sub read_cpuinfo {
             $res->{model} = $arm_cpu_parts->{$cpu_implementer}->{$cpu_part}
                 // sprintf('%s part 0x%03x', $vendor // 'ARM', $cpu_part);
         }
+    }
+
+    # FIXME: loongarch64 has no 'model name'; use 'Loongson' for all loongarch64 CPUs as
+    # a workaround
+    if ($res->{vendor} eq 'unknown' && $res->{family} =~ m/^Loongson/) {
+        $res->{vendor} = 'Loongson';
     }
 
     # Hardware Virtual Machine (Intel VT / AMD-V)
